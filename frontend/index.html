@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Enquiry Logger</title>
+  <meta name="description"
+    content="Internal voice-to-spreadsheet logging tool for admissions and course counseling phone calls.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+  <div class="app-layout">
+    <!-- Top Navigation / Header -->
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="brand">
+          <h1 class="brand-title">Course Enquiry Logger</h1>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-container">
+
+      <!-- Reference Guide Card -->
+      <section class="card guide-card" id="guideSection">
+        <div class="card-header">
+          <h2 class="card-title">Information to Mention in Voice Note</h2>
+        </div>
+
+        <div class="guide-grid">
+          <div class="guide-col">
+            <span class="guide-label">1. Student or Client Name</span>
+            <p class="guide-hint">"The student name is...", "Client name is...", "Got an enquiry from..."</p>
+          </div>
+
+          <div class="guide-col">
+            <span class="guide-label">2. Profile Type (Select One)</span>
+            <div class="tag-list">
+              <span class="tag">College Student</span>
+              <span class="tag">Fresher</span>
+              <span class="tag">Working Professional</span>
+              <span class="tag">Career Switcher</span>
+            </div>
+          </div>
+
+          <div class="guide-col">
+            <span class="guide-label">3. Interested Courses (One or More)</span>
+            <div class="tag-list">
+              <span class="tag tech">AI/ML</span>
+              <span class="tag tech">Generative AI</span>
+              <span class="tag tech">Data Science</span>
+              <span class="tag tech">AI Agents</span>
+              <span class="tag tech">Python</span>
+              <span class="tag tech">Power BI</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Alert Notification Banner -->
+      <div id="alertBanner" class="alert-banner hidden" role="alert">
+        <span class="alert-text" id="alertMessage">Notification message</span>
+        <button id="alertCloseBtn" class="alert-close" aria-label="Close notification">&times;</button>
+      </div>
+
+      <!-- SECTION: RECORDER -->
+      <section class="card recorder-card" id="recorderSection">
+
+        <!-- State: Idle -->
+        <div id="stateIdle" class="recorder-state active">
+          <div class="record-button-container">
+            <button id="startRecordBtn" class="record-btn" aria-label="Start recording call note">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+          <h3 class="record-heading">Click to record call summary</h3>
+          <p class="record-subtext">Press the microphone button and speak the caller's details. Maximum duration: 2
+            minutes.</p>
+        </div>
+
+        <!-- State: Recording -->
+        <div id="stateRecording" class="recorder-state hidden">
+          <div class="recording-badge">
+            <span class="live-dot"></span>
+            <span>Recording Audio</span>
+          </div>
+
+          <div class="timer-display" id="recordingTimer">00:00</div>
+
+          <div class="visualizer-wrapper">
+            <canvas id="visualizerCanvas" width="340" height="48"></canvas>
+          </div>
+
+          <div class="action-buttons">
+            <button id="stopRecordBtn" class="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+              </svg>
+              <span>Done Speaking</span>
+            </button>
+            <button id="cancelRecordBtn" class="btn btn-secondary">
+              <span>Cancel</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- State: Processing -->
+        <div id="stateProcessing" class="recorder-state hidden">
+          <div class="loader-spinner"></div>
+          <h3 class="processing-heading">Processing voice note</h3>
+          <p class="processing-subtext" id="processingStatusText">Transcribing audio and extracting enquiry details...
+          </p>
+        </div>
+
+      </section>
+
+      <!-- SECTION: REVIEW & CONFIRMATION -->
+      <section class="card review-card hidden" id="reviewSection">
+        <div class="card-header flex-header">
+          <div>
+            <h2 class="card-title">Review & Confirm Enquiry</h2>
+            <p class="card-description">Verify the extracted fields before appending the row to Google Sheets.</p>
+          </div>
+          <button id="rerecordBtn" class="btn btn-secondary btn-sm" type="button">
+            Record Again
+          </button>
+        </div>
+
+        <!-- Missing Notice -->
+        <div id="missingNotice" class="warning-box hidden">
+          <strong>Incomplete Details:</strong> One or more required fields were not detected in the voice note. Please
+          review and fill them in below.
+        </div>
+
+        <!-- Transcript Accordion -->
+        <div class="transcript-box">
+          <button id="toggleTranscriptBtn" class="transcript-toggle" type="button" aria-expanded="false">
+            <span>Show Call Transcript</span>
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div id="transcriptBody" class="transcript-body hidden">
+            <p id="transcriptText" class="transcript-text">Transcript will appear here...</p>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <form id="enquiryForm" class="form-layout" novalidate>
+
+          <!-- Field 1: Name -->
+          <div class="form-field" id="groupName">
+            <div class="field-label-row">
+              <label for="inputName" class="field-label">Student / Client Name <span class="required">*</span></label>
+              <span class="status-tag" id="badgeName">Extracted</span>
+            </div>
+            <input type="text" id="inputName" class="text-input" placeholder="e.g. Rahul Sharma" required>
+            <span class="field-error-msg" id="errorName">Please enter the lead's name</span>
+          </div>
+
+          <!-- Field 2: Profile Type -->
+          <div class="form-field" id="groupProfile">
+            <div class="field-label-row">
+              <label for="selectProfile" class="field-label">Profile Type <span class="required">*</span></label>
+              <span class="status-tag" id="badgeProfile">Extracted</span>
+            </div>
+            <select id="selectProfile" class="select-input" required>
+              <option value="" disabled selected>-- Select Profile Type --</option>
+              <option value="College Student">College Student</option>
+              <option value="Fresher">Fresher</option>
+              <option value="Working Professional">Working Professional</option>
+              <option value="Career Switcher">Career Switcher</option>
+            </select>
+            <span class="field-error-msg" id="errorProfile">Please select a profile type</span>
+          </div>
+
+          <!-- Field 3: Interested Technologies -->
+          <div class="form-field" id="groupTech">
+            <div class="field-label-row">
+              <label class="field-label">Interested Courses / Technologies <span class="required">*</span></label>
+              <span class="status-tag" id="badgeTech">Extracted</span>
+            </div>
+            <p class="field-instruction">Click items to select or deselect (at least one required):</p>
+            <div class="chip-group" id="techChipsContainer">
+              <button type="button" class="chip-btn" data-tech="AI/ML">AI/ML</button>
+              <button type="button" class="chip-btn" data-tech="Generative AI">Generative AI</button>
+              <button type="button" class="chip-btn" data-tech="Data Science">Data Science</button>
+              <button type="button" class="chip-btn" data-tech="AI Agents">AI Agents</button>
+              <button type="button" class="chip-btn" data-tech="Python">Python</button>
+              <button type="button" class="chip-btn" data-tech="Power BI">Power BI</button>
+            </div>
+            <span class="field-error-msg" id="errorTech">Please select at least one technology</span>
+          </div>
+
+          <!-- Field 4: Timestamp -->
+          <div class="form-field" id="groupTime">
+            <div class="field-label-row">
+              <label class="field-label">Call Timestamp</label>
+              <span class="status-tag neutral">Auto-recorded</span>
+            </div>
+            <div class="timestamp-display">
+              <span id="displayEnquiryTime">2026-10-12 20:00:00</span>
+              <input type="hidden" id="inputEnquiryTime">
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="form-actions">
+            <button type="submit" id="submitEnquiryBtn" class="btn btn-primary btn-block">
+              <span class="btn-text">Save to Google Sheets</span>
+              <div class="spinner-inline hidden" id="submitSpinner"></div>
+            </button>
+          </div>
+
+        </form>
+      </section>
+
+      <!-- SECTION: SUCCESS -->
+      <section class="card success-card hidden" id="successSection">
+        <div class="success-icon-box">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+
+        <h2 class="success-heading">Enquiry Saved to Google Sheets</h2>
+        <p class="success-subheading">The row has been appended to the spreadsheet.</p>
+
+        <div class="summary-table">
+          <div class="summary-cell">
+            <span class="summary-key">Name</span>
+            <span class="summary-value" id="summaryName">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-key">Profile Type</span>
+            <span class="summary-value" id="summaryProfile">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-key">Courses</span>
+            <span class="summary-value" id="summaryTech">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-key">Timestamp</span>
+            <span class="summary-value" id="summaryTime">-</span>
+          </div>
+          <div class="summary-cell highlight-cell">
+            <span class="summary-key">Sheet Row</span>
+            <span class="summary-value" id="summaryRowNumber">#</span>
+          </div>
+        </div>
+
+        <button id="recordAnotherBtn" class="btn btn-primary" type="button">
+          Record Another Enquiry
+        </button>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>Course Enquiry Logger &bull; Connected to Google Sheets</span>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+
+</html>
