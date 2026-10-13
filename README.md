@@ -1,3 +1,5 @@
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
 # 🎙️ Voice Enquiry Recorder
 
 A responsive, single-page web app and FastAPI backend that records visitor voice notes (in English or Hinglish), transcribes them, extracts structured lead details using a free Groq LLM with structured output, provides an interactive confirmation screen, and automatically appends rows to a Google Sheet.
