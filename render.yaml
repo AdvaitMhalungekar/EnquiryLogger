@@ -1,0 +1,32 @@
+# render.yaml — Render Infrastructure as Code
+# Render will auto-detect this file and pre-fill your service settings.
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: voice-enquiry-recorder
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    # Health check so Render knows the app started successfully
+    healthCheckPath: /api/health
+    # Environment variables — set SECRET values in the Render dashboard, not here
+    envVars:
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: GROQ_WHISPER_MODEL
+        value: whisper-large-v3
+      - key: TRANSCRIPTION_PROVIDER
+        value: groq
+      - key: GOOGLE_SHEET_NAME
+        value: Sheet1
+      - key: TIMEZONE
+        value: Asia/Kolkata
+      - key: MAX_AUDIO_SIZE_MB
+        value: "10"
+      - key: MAX_AUDIO_DURATION_SECONDS
+        value: "120"
+      # ⚠️ Set these as SECRET env vars in the Render Dashboard — do NOT put real values here:
+      # - key: GROQ_API_KEY
+      # - key: GOOGLE_SHEET_ID
+      # - key: GOOGLE_SERVICE_ACCOUNT_JSON_RAW
